@@ -66,3 +66,4 @@ def get_channel_information(file, output):
     ]
     yaml.dump(channels, output)
     pd.DataFrame(channels).set_index("id").to_excel("resources/channels.xlsx")
+    pd.DataFrame(channels).set_index("id").to_csv("resources/channels.csv")

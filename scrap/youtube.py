@@ -24,21 +24,41 @@ def iterate_on_videos(client, channel_id):
 
     while True:
         request = client.playlistItems().list(
-            part="contentDetails",
+            part="contentDetails,snippet",
             playlistId=playlist_id,
             maxResults=50,
             pageToken=next_page_token,
         )
         response = request.execute()
-        yield from [item["contentDetails"]["videoId"] for item in response["items"]]
+        #yield from [item for item in response["items"]]
+        for item in response["items"]:
+            if item["snippet"]["resourceId"]["kind"] != "youtube#video":
+                continue
+            yield {
+                "video_id": item["snippet"]["resourceId"]["videoId"],
+                "title": item["snippet"]["title"],
+                "description": item["snippet"]["description"],
+                "published_at": item["snippet"]["publishedAt"],
+                "channel_id": item["snippet"]["channelId"],
+                "channel_title": item["snippet"]["channelTitle"],
+            }
+
+
         next_page_token = response.get("nextPageToken")
         if not next_page_token:
             break
 
 
-def get_video_transcription(video_id, language="pt"):
+def get_video_transcription(video_id, languages=None):
     """
     Get the transcription of a video.
     """
-    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[language])
-    return transcript
+    languages = languages or ["pt", "en"]
+    transcriptions = {}
+    for language in languages:
+        try: 
+            transcriptions[language] = YouTubeTranscriptApi\
+                .get_transcript(video_id, languages=[language])
+        except Exception as e:
+            print(f"\tNo {language} transcript found for video {video_id}.")
+    return transcriptions
